@@ -6,7 +6,7 @@ import copy
 from itertools import product as prod
 
 
-class CSP:
+class Solver:
     def __init__(self):
         # self.variables is a list of the variable names in the CSP
         self.variables = []
@@ -166,17 +166,53 @@ class CSP:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
-        # TODO: YOUR CODE HERE
-        pass
+        if self.complete(assignment):
+            return assignment
+        variable = self.select_unassigned_variable(assignment)
+        for value in assignment[variable]:
+            if self.consistent(variable, value, assignment):
+                assignmentCopy = copy.deepcopy(assignment)
+                assignmentCopy[variable] = [value]
+                if self.inference(assignment, self.get_all_arcs()):
+                    result = self.backtrack(assignmentCopy)
+                    if result is not None:
+                        return result
+        return None
 
-    def select_unassigned_variable(self, assignment: dict):
+    # -------------------------------------- Method -------------------------------------
+
+    def consistent(self, variableName, value, assignment) -> bool:
+        # TODO How to check consistency?
+        return False
+    # -------------------------------------- Method -------------------------------------
+
+    def complete(self, assignment: dict) -> bool:
+        """
+        Verifies whether the assignment is complete i.e. each variable has only one value associated to it.
+        :param assignment: a dictionary of variable and domain.
+        :return: True if all variable have one - and only one - solution, False otherwise.
+        """
+        for varName, listOfPossibleValues in assignment:
+            if len(listOfPossibleValues) != 1:
+                return False
+        return True
+
+    # -------------------------------------- Method -------------------------------------
+
+    def select_unassigned_variable(self, assignment: dict[str, list]) -> str:
         """The function 'Select-Unassigned-Variable' from the pseudocode
         in the textbook. Should return the name of one of the variables
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
+
+        Return:
+            The first variable with a list of possible values greater than one.
         """
-        # TODO: YOUR CODE HERE
-        pass
+        for variableName, listOfPossibleValues in assignment:
+            if len(listOfPossibleValues) > 1:
+                return variableName
+
+    # -------------------------------------- Method -------------------------------------
 
     def inference(self, assignment: dict, queue: list[tuple]):
         """The function 'AC-3' from the pseudocode in the textbook.
@@ -187,6 +223,7 @@ class CSP:
         # TODO: YOUR CODE HERE
         pass
 
+    # -------------------------------------- Method -------------------------------------
     def revise(self, assignment: dict, i: int, j: int):
         """The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
@@ -200,12 +237,13 @@ class CSP:
         pass
 
 
+# -------------------------------------- class CSP end ----------------------------------------------------------------
 def create_map_coloring_csp():
     """Instantiate a CSP representing the map coloring problem from the
     textbook. This can be useful for testing your CSP solver as you
     develop your code.
     """
-    csp = CSP()
+    csp = Solver()
     states = ['WA', 'NT', 'Q', 'NSW', 'V', 'SA', 'T']
     edges = {'SA': ['WA', 'NT', 'Q', 'NSW', 'V'],
              'NT': ['WA', 'Q'], 'NSW': ['Q', 'V']}
@@ -219,7 +257,8 @@ def create_map_coloring_csp():
     return csp
 
 
-def create_sudoku_csp(filename: str) -> CSP:
+# -------------------------------------- function end -----------------------------------------------------------------
+def create_sudoku_csp(filename: str) -> Solver:
     """Instantiate a CSP representing the Sudoku board found in the text
     file named 'filename' in the current directory.
 
@@ -230,40 +269,42 @@ def create_sudoku_csp(filename: str) -> CSP:
 
     Returns
     -------
-    CSP
-        A CSP instance
+    Solver
+        A Solver instance
     """
-    csp = CSP()
+    solver = Solver()
     board = list(map(lambda x: x.strip(), open(filename, 'r')))
 
     for row in range(9):
         for col in range(9):
             if board[row][col] == '0':
-                csp.add_variable('%d-%d' % (row, col), list(map(str,
-                                                                range(1, 10))))
+                solver.add_variable('%d-%d' % (row, col), list(map(str,
+                                                                   range(1, 10))))
             else:
-                csp.add_variable('%d-%d' % (row, col), [board[row][col]])
+                solver.add_variable('%d-%d' % (row, col), [board[row][col]])
 
     for row in range(9):
-        csp.add_all_different_constraint(['%d-%d' % (row, col)
-                                          for col in range(9)])
+        solver.add_all_different_constraint(['%d-%d' % (row, col)
+                                             for col in range(9)])
     for col in range(9):
-        csp.add_all_different_constraint(['%d-%d' % (row, col)
-                                          for row in range(9)])
+        solver.add_all_different_constraint(['%d-%d' % (row, col)
+                                             for row in range(9)])
     for box_row in range(3):
         for box_col in range(3):
             cells = []
             for row in range(box_row * 3, (box_row + 1) * 3):
                 for col in range(box_col * 3, (box_col + 1) * 3):
                     cells.append('%d-%d' % (row, col))
-            csp.add_all_different_constraint(cells)
+            solver.add_all_different_constraint(cells)
 
-    return csp
+    return solver
 
+
+# -------------------------------------- function end -----------------------------------------------------------------
 
 def print_sudoku_solution(solution):
     """Convert the representation of a Sudoku solution as returned from
-    the method CSP.backtracking_search(), into a human readable
+    the method CSP.backtracking_search(), into a human-readable
     representation.
     """
     for row in range(9):
