@@ -109,13 +109,11 @@ class CSP:
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
-        self.constraints[i][j] = list(filter(lambda
-                                             value_pair:
-                                             filter_function(*value_pair),
-                                             self.constraints[i][j]))
+        self.constraints[i][j] = (
+            list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j])))
 
     def add_all_different_constraint(self, var_list: list):
-        """Add an Alldiff constraint between all of the variables in the
+        """Add an Alldiff constraint between all the variables in the
         list provided.
 
         Parameters
@@ -137,14 +135,14 @@ class CSP:
         # side effects elsewhere.
         assignment = copy.deepcopy(self.domains)
 
-        # Run AC-3 on all constraints in the CSP, to weed out all of the
+        # Run AC-3 on all constraints in the CSP, to weed out all the
         # values that are not arc-consistent to begin with
         self.inference(assignment, self.get_all_arcs())
 
         # Call backtrack with the partial assignment 'assignment'
         return self.backtrack(assignment)
 
-    def backtrack(self, assignment):
+    def backtrack(self, assignment: dict):
         """The function 'Backtrack' from the pseudocode in the
         textbook.
 
@@ -154,7 +152,7 @@ class CSP:
         been decided, and a list of only a single value for the
         variables that *have* been decided.
 
-        When all of the variables in 'assignment' have lists of length
+        When all the variables in 'assignment' have lists of length
         one, i.e. when all variables have been assigned a value, the
         function should return 'assignment'. Otherwise, the search
         should continue. When the function 'inference' is called to run
@@ -171,7 +169,7 @@ class CSP:
         # TODO: YOUR CODE HERE
         pass
 
-    def select_unassigned_variable(self, assignment):
+    def select_unassigned_variable(self, assignment: dict):
         """The function 'Select-Unassigned-Variable' from the pseudocode
         in the textbook. Should return the name of one of the variables
         in 'assignment' that have not yet been decided, i.e. whose list
@@ -180,7 +178,7 @@ class CSP:
         # TODO: YOUR CODE HERE
         pass
 
-    def inference(self, assignment, queue):
+    def inference(self, assignment: dict, queue: list[tuple]):
         """The function 'AC-3' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'queue'
@@ -189,7 +187,7 @@ class CSP:
         # TODO: YOUR CODE HERE
         pass
 
-    def revise(self, assignment, i, j):
+    def revise(self, assignment: dict, i: int, j: int):
         """The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'i' and
@@ -251,7 +249,7 @@ def create_sudoku_csp(filename: str) -> CSP:
                                           for col in range(9)])
     for col in range(9):
         csp.add_all_different_constraint(['%d-%d' % (row, col)
-                                         for row in range(9)])
+                                          for row in range(9)])
     for box_row in range(3):
         for box_col in range(3):
             cells = []
