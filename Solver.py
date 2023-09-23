@@ -183,7 +183,8 @@ class Solver:
 
     def consistent(self, variableName, value, assignment) -> bool:
         # TODO How to check consistency?
-        return False
+        return True
+
     # -------------------------------------- Method -------------------------------------
 
     def complete(self, assignment: dict) -> bool:
@@ -220,11 +221,15 @@ class Solver:
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
-        # TODO: YOUR CODE HERE
+        auxQueue = copy.deepcopy(queue)
+        while len(auxQueue) > 0:
+            Xi, Xj = auxQueue.pop()
+            if self.revise(assignment, Xi, Xj):
+
         pass
 
     # -------------------------------------- Method -------------------------------------
-    def revise(self, assignment: dict, i: int, j: int):
+    def revise(self, assignment: dict, i:str, j:str) -> bool:
         """The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'i' and
@@ -233,8 +238,21 @@ class Solver:
         between i and j, the value should be deleted from i's list of
         legal values in 'assignment'.
         """
-        # TODO: YOUR CODE HERE
-        pass
+        arcConstraints_D = self.constraints[i][j]
+        notSatisfyingValues = []
+        iDomain = list(assignment[i])
+        satisfies = False
+        for value_in_i_domain in iDomain:
+            for Di, Dj in arcConstraints_D:
+                if value_in_i_domain == Di:
+                    satisfies = True
+                    continue
+            if not satisfies:
+                notSatisfyingValues.append(value_in_i_domain)
+                satisfies = False
+        iDomain.remove(notSatisfyingValues)
+        # any value remaining in the domain?
+        return len(iDomain)>0
 
 
 # -------------------------------------- class CSP end ----------------------------------------------------------------
