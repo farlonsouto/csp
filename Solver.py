@@ -166,13 +166,13 @@ class Solver:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
-        if self.complete(assignment):
+        if self.hasCompletedThe(assignment):
             return assignment
-        variable = self.select_unassigned_variable(assignment)
-        for value in assignment[variable]:
-            if self.consistent(variable, value, assignment):
+        Xi = self.select_unassigned_variable(assignment)
+        for Di in assignment[Xi]:
+            if self.isConsistent(Xi, Di, assignment):
                 assignmentCopy = copy.deepcopy(assignment)
-                assignmentCopy[variable] = [value]
+                assignmentCopy[Xi] = [Di]  # a new version where the solution for X1 is Di
                 if self.inference(assignment, self.get_all_arcs()):
                     result = self.backtrack(assignmentCopy)
                     if result is not None:
@@ -181,20 +181,20 @@ class Solver:
 
     # -------------------------------------- Method -------------------------------------
 
-    def consistent(self, variableName, value, assignment) -> bool:
+    def isConsistent(self, variableName, value, assignment) -> bool:
         # TODO How to check consistency?
         return True
 
     # -------------------------------------- Method -------------------------------------
 
-    def complete(self, assignment: dict) -> bool:
+    def hasCompletedThe(self, assignment: dict) -> bool:
         """
         Verifies whether the assignment is complete i.e. each variable has only one value associated to it.
         :param assignment: a dictionary of variable and domain.
         :return: True if all variable have one - and only one - solution, False otherwise.
         """
-        for varName, listOfPossibleValues in assignment:
-            if len(listOfPossibleValues) != 1:
+        for Xi, Di in assignment:
+            if len(Di) != 1:
                 return False
         return True
 
@@ -215,44 +215,50 @@ class Solver:
 
     # -------------------------------------- Method -------------------------------------
 
-    def inference(self, assignment: dict, queue: list[tuple]):
+    def inference(self, assignment: dict, queue: list[tuple]) -> bool:
         """The function 'AC-3' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
-        auxQueue = copy.deepcopy(queue)
-        while len(auxQueue) > 0:
-            Xi, Xj = auxQueue.pop()
-            if self.revise(assignment, Xi, Xj):
-
-        pass
+        while len(queue) > 0:
+            Xi, Xj = queue.pop()
+            if self.revised(assignment, Xi, Xj):
+                if len(assignment[Xi]) == 0:
+                    return False
+                Xi_neighbors = list(self.get_all_neighboring_arcs(Xi))
+                for Xk in Xi_neighbors:
+                    if Xk != Xj:  # All neighbors but Xj
+                        queue.append((Xk, Xi))
+        return True
 
     # -------------------------------------- Method -------------------------------------
-    def revise(self, assignment: dict, i:str, j:str) -> bool:
+    def revised(self, assignment: dict, Xi: str, Xj: str):
         """The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'i' and
         'j' specifies the arc that should be visited. If a value is
         found in variable i's domain that doesn't satisfy the constraint
-        between i and j, the value should be deleted from i's list of
+        between Xi and Xj, the value should be deleted from i's list of
         legal values in 'assignment'.
+
+        Constraint-based pruning
         """
-        arcConstraints_D = self.constraints[i][j]
+        revised = False
+        arcConstraints_C = self.constraints[Xi][Xj]
         notSatisfyingValues = []
-        iDomain = list(assignment[i])
-        satisfies = False
+        iDomain = list(assignment[Xi])
         for value_in_i_domain in iDomain:
-            for Di, Dj in arcConstraints_D:
-                if value_in_i_domain == Di:
+            satisfies = False
+            for Ci, Cj in arcConstraints_C:
+                if value_in_i_domain == Ci:
                     satisfies = True
                     continue
             if not satisfies:
                 notSatisfyingValues.append(value_in_i_domain)
-                satisfies = False
+                revised = True
         iDomain.remove(notSatisfyingValues)
-        # any value remaining in the domain?
-        return len(iDomain)>0
+        return revised
 
 
 # -------------------------------------- class CSP end ----------------------------------------------------------------
