@@ -193,7 +193,7 @@ class Solver:
         :param assignment: a dictionary of variable and domain.
         :return: True if all variable have one - and only one - solution, False otherwise.
         """
-        for Xi, Di in assignment:
+        for Xi, Di in assignment.items():
             if len(Di) != 1:
                 return False
         return True
@@ -209,9 +209,9 @@ class Solver:
         Return:
             The first variable with a list of possible values greater than one.
         """
-        for variableName, listOfPossibleValues in assignment:
-            if len(listOfPossibleValues) > 1:
-                return variableName
+        for Xi, Domain in assignment.items():
+            if len(Domain) > 1:
+                return Xi
 
     # -------------------------------------- Method -------------------------------------
 
@@ -257,7 +257,7 @@ class Solver:
             if not satisfies:
                 notSatisfyingValues.append(value_in_i_domain)
                 revised = True
-        iDomain.remove(notSatisfyingValues)
+            iDomain = [i for i in iDomain if i not in notSatisfyingValues]
         return revised
 
 
