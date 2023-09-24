@@ -87,7 +87,7 @@ class Solver:
 
         NB! This method only adds the constraint one way, from i -> j.
         You must ensure to call the function the other way around, in
-        order to add the constraint the from j -> i, as all constraints
+        order to add the constraint from j -> i, as all constraints
         are supposed to be two-way connections!
 
         Parameters
@@ -193,10 +193,9 @@ class Solver:
                 if len(assignment[Xi]) == 0:
                     return False
                 Xi_neighbors = list(self.get_all_neighboring_arcs(Xi))
-                print(Xi_neighbors)
-                for Xk in Xi_neighbors:
-                    if Xk != Xj:  # All neighbors but Xj
-                        queue.append((Xk, Xi))
+                for neighbor_arc in Xi_neighbors:
+                    if Xj not in neighbor_arc:  # All neighbors but Xj
+                        queue.append(neighbor_arc)
         return True
 
     # -------------------------------------- Method -------------------------------------
@@ -230,7 +229,7 @@ class Solver:
         # removes all the not satisfying x from Di
         for x in notSatisfyingValues:
             Di.remove(x)
-        assignment[Xi] = Di  # TODO why is not removing?
+        assignment[Xi] = Di
         return revised
 
     # -------------------------------------- Method -------------------------------------
