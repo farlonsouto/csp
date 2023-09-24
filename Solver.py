@@ -18,6 +18,11 @@ class Solver:
         # the variable pair (i, j)
         self.constraints = {}
 
+        self.numCalls = 0
+        self.numFailures = 0
+
+    # -------------------------------------- Method -------------------------------------------------
+
     def add_variable(self, name: str, domain: list):
         """Add a new variable to the CSP.
 
@@ -32,7 +37,10 @@ class Solver:
         self.domains[name] = list(domain)
         self.constraints[name] = {}
 
-    def get_all_possible_pairs(self, a: list, b: list) -> list[tuple]:
+    # -------------------------------------- Method -------------------------------------------------
+
+    @staticmethod
+    def get_all_possible_pairs(a: list, b: list) -> list[tuple]:
         """Get a list of all possible pairs (as tuples) of the values in
         lists 'a' and 'b', where the first component comes from list
         'a' and the second component comes from list 'b'.
@@ -51,6 +59,8 @@ class Solver:
         """
         return prod(a, b)
 
+    # -------------------------------------- Method -------------------------------------------------
+
     def get_all_arcs(self) -> list[tuple]:
         """Get a list of all arcs/constraints that have been defined in
         the CSP.
@@ -62,6 +72,8 @@ class Solver:
             constraint between variable `i` and `j`
         """
         return [(i, j) for i in self.constraints for j in self.constraints[i]]
+
+    # -------------------------------------- Method -------------------------------------------------
 
     def get_all_neighboring_arcs(self, var: str) -> list[tuple]:
         """Get a list of all arcs/constraints going to/from variable 'var'.
@@ -77,6 +89,8 @@ class Solver:
             A list of all arcs/constraints in which `var` is involved
         """
         return [(i, var) for i in self.constraints[var]]
+
+    # -------------------------------------- Method -------------------------------------------------
 
     def add_constraint_one_way(self, i: str, j: str,
                                filter_function: callable):
@@ -112,6 +126,8 @@ class Solver:
         self.constraints[i][j] = (
             list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j])))
 
+    # -------------------------------------- Method -------------------------------------------------
+
     def add_all_different_constraint(self, var_list: list):
         """Add an Alldiff constraint between all the variables in the
         list provided.
@@ -124,6 +140,8 @@ class Solver:
         for (i, j) in self.get_all_possible_pairs(var_list, var_list):
             if i != j:
                 self.add_constraint_one_way(i, j, lambda x, y: x != y)
+
+    # -------------------------------------- Method -------------------------------------------------
 
     def backtracking_search(self):
         """This functions starts the CSP solver and returns the found
@@ -141,6 +159,8 @@ class Solver:
 
         # Call backtrack with the partial assignment 'assignment'
         return self.backtrack(assignment)
+
+    # -------------------------------------- Method -------------------------------------------------
 
     def backtrack(self, assignment: dict):
         """The function 'Backtrack' from the pseudocode in the
@@ -166,6 +186,7 @@ class Solver:
         assignments and inferences that took place in previous
         iterations of the loop.
         """
+        self.numCalls += 1
         if self.hasCompletedThe(assignment):
             return assignment
         Xi = self.selectUnassignedVariableFrom(assignment)
@@ -177,9 +198,10 @@ class Solver:
                     result = self.backtrack(assignmentCopy)
                     if result is not None:
                         return result
+        self.numFailures += 1
         return None
 
-    # -------------------------------------- Method -------------------------------------
+    # -------------------------------------- Method -------------------------------------------------
 
     def ac3_inference(self, assignment: dict, queue: list[tuple]) -> bool:
         """The function 'AC-3' from the pseudocode in the textbook.
@@ -198,7 +220,7 @@ class Solver:
                         queue.append(neighbor_arc)
         return True
 
-    # -------------------------------------- Method -------------------------------------
+    # -------------------------------------- Method -------------------------------------------------
 
     def revised(self, assignment: dict, Xi: str, Xj: str):
         """The function 'Revise' from the pseudocode in the textbook.
@@ -232,7 +254,7 @@ class Solver:
         assignment[Xi] = Di
         return revised
 
-    # -------------------------------------- Method -------------------------------------
+    # -------------------------------------- Method -------------------------------------------------
 
     @staticmethod
     def selectUnassignedVariableFrom(assignment: dict[str, list]) -> str:
@@ -242,26 +264,27 @@ class Solver:
         of legal values has a length greater than one.
 
         Return:
-            The first variable with a list of possible values greater than one.
+            The first variable holding a list of possible values (domain) greater than one.
         """
         for Xi, Domain in assignment.items():
             if len(Domain) > 1:
                 return Xi
 
-    # -------------------------------------- Method -------------------------------------
+    # -------------------------------------- Method -------------------------------------------------
 
-    def isConsistent(self, Xi, Di, assignment) -> bool:
-        neighbors = self.get_all_neighboring_arcs(Xi)
+    @staticmethod
+    def isConsistent(Xi, Di, assignment) -> bool:
+        # TODO add more intelligence in future versions?
         return True
 
-    # -------------------------------------- Method -------------------------------------
+    # -------------------------------------- Method -------------------------------------------------
 
     @staticmethod
     def hasCompletedThe(assignment: dict) -> bool:
         """
         Verifies whether the assignment is complete i.e. each variable has only one value associated to it.
         :param assignment: a dictionary of variable and domain.
-        :return: True if all variable have one - and only one - solution, False otherwise.
+        :return: True if all variable have one - and only one - solution. False if otherwise.
         """
         for Xi, Di in assignment.items():
             if len(Di) != 1:
@@ -289,7 +312,7 @@ def create_map_coloring_csp():
     return csp
 
 
-# -------------------------------------- function end -----------------------------------------------------------------
+# -------------------------------------- function -----------------------------------------------------------------
 def create_sudoku_csp(filename: str) -> Solver:
     """Instantiate a CSP representing the Sudoku board found in the text
     file named 'filename' in the current directory.
@@ -332,7 +355,7 @@ def create_sudoku_csp(filename: str) -> Solver:
     return solver
 
 
-# -------------------------------------- function end -----------------------------------------------------------------
+# -------------------------------------- function -----------------------------------------------------------------
 
 def print_sudoku_solution(solution):
     """Convert the representation of a Sudoku solution as returned from
