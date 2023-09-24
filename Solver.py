@@ -137,7 +137,7 @@ class Solver:
 
         # Run AC-3 on all constraints in the CSP, to weed out all the
         # values that are not arc-consistent to begin with
-        self.inference(assignment, self.get_all_arcs())
+        self.ac3_inference(assignment, self.get_all_arcs())
 
         # Call backtrack with the partial assignment 'assignment'
         return self.backtrack(assignment)
@@ -168,12 +168,12 @@ class Solver:
         """
         if self.hasCompletedThe(assignment):
             return assignment
-        Xi = self.select_unassigned_variable(assignment)
+        Xi = self.selectUnassignedVariableFrom(assignment)
         for Di in assignment[Xi]:
             if self.isConsistent(Xi, Di, assignment):
                 assignmentCopy = copy.deepcopy(assignment)
                 assignmentCopy[Xi] = [Di]  # a new version where the solution for X1 is Di
-                if self.inference(assignment, self.get_all_arcs()):
+                if self.ac3_inference(assignmentCopy, copy.deepcopy(self.get_all_arcs())):
                     result = self.backtrack(assignmentCopy)
                     if result is not None:
                         return result
@@ -181,26 +181,62 @@ class Solver:
 
     # -------------------------------------- Method -------------------------------------
 
-    def isConsistent(self, variableName, value, assignment) -> bool:
-        # TODO How to check consistency?
+    def ac3_inference(self, assignment: dict, queue: list[tuple]) -> bool:
+        """The function 'AC-3' from the pseudocode in the textbook.
+        'assignment' is the current partial assignment, that contains
+        the lists of legal values for each undecided variable. 'queue'
+        is the initial queue of arcs that should be visited.
+        """
+        while len(queue) > 0:
+            Xi, Xj = queue.pop()
+            if self.revised(assignment, Xi, Xj):
+                if len(assignment[Xi]) == 0:
+                    return False
+                Xi_neighbors = list(self.get_all_neighboring_arcs(Xi))
+                print(Xi_neighbors)
+                for Xk in Xi_neighbors:
+                    if Xk != Xj:  # All neighbors but Xj
+                        queue.append((Xk, Xi))
         return True
 
     # -------------------------------------- Method -------------------------------------
 
-    def hasCompletedThe(self, assignment: dict) -> bool:
+    def revised(self, assignment: dict, Xi: str, Xj: str):
+        """The function 'Revise' from the pseudocode in the textbook.
+        'assignment' is the current partial assignment, that contains
+        the lists of legal values for each undecided variable. 'i' and
+        'j' specifies the arc that should be visited. If a value is
+        found in variable i's domain that doesn't satisfy the constraint
+        between Xi and Xj, the value should be deleted from i's list of
+        legal values in 'assignment'.
+
+        Constraint-based pruning
         """
-        Verifies whether the assignment is complete i.e. each variable has only one value associated to it.
-        :param assignment: a dictionary of variable and domain.
-        :return: True if all variable have one - and only one - solution, False otherwise.
-        """
-        for Xi, Di in assignment.items():
-            if len(Di) != 1:
-                return False
-        return True
+        revised = False
+        constraints_Xi_Xj = self.constraints[Xi][Xj]
+        notSatisfyingValues = []
+        Di = list(assignment[Xi])
+        Dj = list(assignment[Xj])
+
+        for x_in_Di in Di:
+            satisfies = False
+            for y_in_Dj in Dj:
+                if (x_in_Di, y_in_Dj) in constraints_Xi_Xj:
+                    satisfies = True
+            if not satisfies:
+                notSatisfyingValues.append(x_in_Di)
+                revised = True
+
+        # removes all the not satisfying x from Di
+        for x in notSatisfyingValues:
+            Di.remove(x)
+        assignment[Xi] = Di  # TODO why is not removing?
+        return revised
 
     # -------------------------------------- Method -------------------------------------
 
-    def select_unassigned_variable(self, assignment: dict[str, list]) -> str:
+    @staticmethod
+    def selectUnassignedVariableFrom(assignment: dict[str, list]) -> str:
         """The function 'Select-Unassigned-Variable' from the pseudocode
         in the textbook. Should return the name of one of the variables
         in 'assignment' that have not yet been decided, i.e. whose list
@@ -215,50 +251,23 @@ class Solver:
 
     # -------------------------------------- Method -------------------------------------
 
-    def inference(self, assignment: dict, queue: list[tuple]) -> bool:
-        """The function 'AC-3' from the pseudocode in the textbook.
-        'assignment' is the current partial assignment, that contains
-        the lists of legal values for each undecided variable. 'queue'
-        is the initial queue of arcs that should be visited.
-        """
-        while len(queue) > 0:
-            Xi, Xj = queue.pop()
-            if self.revised(assignment, Xi, Xj):
-                if len(assignment[Xi]) == 0:
-                    return False
-                Xi_neighbors = list(self.get_all_neighboring_arcs(Xi))
-                for Xk in Xi_neighbors:
-                    if Xk != Xj:  # All neighbors but Xj
-                        queue.append((Xk, Xi))
+    def isConsistent(self, Xi, Di, assignment) -> bool:
+        neighbors = self.get_all_neighboring_arcs(Xi)
         return True
 
     # -------------------------------------- Method -------------------------------------
-    def revised(self, assignment: dict, Xi: str, Xj: str):
-        """The function 'Revise' from the pseudocode in the textbook.
-        'assignment' is the current partial assignment, that contains
-        the lists of legal values for each undecided variable. 'i' and
-        'j' specifies the arc that should be visited. If a value is
-        found in variable i's domain that doesn't satisfy the constraint
-        between Xi and Xj, the value should be deleted from i's list of
-        legal values in 'assignment'.
 
-        Constraint-based pruning
+    @staticmethod
+    def hasCompletedThe(assignment: dict) -> bool:
         """
-        revised = False
-        arcConstraints_C = self.constraints[Xi][Xj]
-        notSatisfyingValues = []
-        iDomain = list(assignment[Xi])
-        for value_in_i_domain in iDomain:
-            satisfies = False
-            for Ci, Cj in arcConstraints_C:
-                if value_in_i_domain == Ci:
-                    satisfies = True
-                    continue
-            if not satisfies:
-                notSatisfyingValues.append(value_in_i_domain)
-                revised = True
-            iDomain = [i for i in iDomain if i not in notSatisfyingValues]
-        return revised
+        Verifies whether the assignment is complete i.e. each variable has only one value associated to it.
+        :param assignment: a dictionary of variable and domain.
+        :return: True if all variable have one - and only one - solution, False otherwise.
+        """
+        for Xi, Di in assignment.items():
+            if len(Di) != 1:
+                return False
+        return True
 
 
 # -------------------------------------- class CSP end ----------------------------------------------------------------
